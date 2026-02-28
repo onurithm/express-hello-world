@@ -1,5 +1,17 @@
 // Import Express.js
 const express = require('express');
+const sqlite3 = require('sqlite3').verbose();
+const path = require('path');
+
+// Initialize database connection
+const dbPath = path.resolve(__dirname, 'api-db.sqlite');
+const db = new sqlite3.Database(dbPath, (err) => {
+  if (err) {
+    console.error('Error opening database:', err.message);
+  } else {
+    console.log('Connected to the SQLite database.');
+  }
+});
 
 // Create an Express app
 const app = express();
@@ -30,11 +42,11 @@ app.get('/', (req, res) => {
 app.post('/', (req, res) => {
   const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
   console.log(`\n\nWebhook received ${timestamp}\n`);
-  
+
   // Gelen veriyi diziye ekleyelim
   const webhookBody = req.body;
   receivedMessages.push(webhookBody);
-  
+
   console.log(JSON.stringify(webhookBody, null, 2));
   res.status(200).end();
 });
@@ -43,10 +55,22 @@ app.post('/', (req, res) => {
 app.get('/messages', (req, res) => {
   // Elimizdeki tüm mesajları JSON olarak dönüyoruz
   res.json(receivedMessages);
-  
+
   // Opsiyonel: C# projeniz okuduktan sonra express belleğini temizlemek için listeyi sıfırlayabilirsiniz
   // Eğer sürekli eski mesajları da okumak istemiyorsanız alttaki yorumu kaldırabilirsiniz:
   // receivedMessages = []; 
+});
+
+app.get('/dummy-data', (req, res) => {
+  const sql = 'SELECT * FROM Odemeler';
+  db.all(sql, [], (err, rows) => {
+    if (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Database error' });
+    } else {
+      res.json(rows);
+    }
+  });
 });
 
 // Start the server
